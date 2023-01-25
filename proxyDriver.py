@@ -1,7 +1,7 @@
 import os
 import shutil
 import undetected_chromedriver as uc
-
+from proxies import Proxy
 
 manifest_json = """
 {
@@ -25,7 +25,7 @@ manifest_json = """
 """
 
 
-def getProxyChromeDriver(PROXY_HOST : str, PROXY_PORT : str, PROXY_USER : str, PROXY_PASS : str,ExtensionFolderName="proxyExtension"):
+def getProxyChromeDriver(proxy:Proxy,ExtensionFolderName="proxyExtension"):
     background_js = """
     var config = {
             mode: "fixed_servers",
@@ -55,7 +55,7 @@ def getProxyChromeDriver(PROXY_HOST : str, PROXY_PORT : str, PROXY_USER : str, P
                 {urls: ["<all_urls>"]},
                 ['blocking']
     );
-    """ % (PROXY_HOST, PROXY_PORT, PROXY_USER, PROXY_PASS)
+    """ % (proxy.host, proxy.port, proxy.user, proxy.password)
 
     chrome_options = uc.ChromeOptions()
 
@@ -73,7 +73,10 @@ def getProxyChromeDriver(PROXY_HOST : str, PROXY_PORT : str, PROXY_USER : str, P
 
     chrome_options.add_argument(f"--load-extension={','.join([pluginPath])}")
 
-    driver = uc.Chrome(chrome_options)
+
+    driver = uc.Chrome(
+        options=chrome_options,
+        )
 
     shutil.rmtree(pluginPath)
 
