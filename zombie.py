@@ -6,6 +6,8 @@ import shutil
 from strings import proxyExtensionStrings
 import time
 import random
+from selenium.webdriver.remote.webdriver import By
+from selenium.common.exceptions import NoSuchElementException
 
 class Zombie:
     def __init__(self,proxy:Proxy | None = None,defaultImplTimeout = 6,pause_cnfg : dict = {}):
@@ -35,6 +37,16 @@ class Zombie:
         if not proxy == None:
             shutil.rmtree(extensionFolderPath)
 
+
+    def getConditionalElement(self,xpath:str):
+        try:
+            elem = self.driver.find_element(By.XPATH,xpath)
+            return elem
+        except NoSuchElementException:
+            return False
+
+
+
     
     def realSendKeys(self,element : uc.WebElement,string:str,clickElem = True, ms :int =145,randomOffSet : bool | int =20):
         if clickElem == True:
@@ -45,10 +57,6 @@ class Zombie:
                 delay = ms if randomOffSet == False else ms + random.randint(-randomOffSet,randomOffSet)
                 time.sleep(delay / 1000)
                 element.send_keys(char)
-
-
-
-
 
     def pause(self,min : int | None = None, max : int | None = None,shortened : bool | float = False):
         if(min == None):
