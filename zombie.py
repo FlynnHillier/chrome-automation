@@ -8,6 +8,7 @@ import time
 import random
 from selenium.webdriver.remote.webdriver import By
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver import Keys
 
 class Zombie:
     def __init__(self,proxy:Proxy | None = None,defaultImplTimeout = 6,pause_cnfg : dict = {}):
@@ -45,7 +46,17 @@ class Zombie:
         except NoSuchElementException:
             return False
 
+    def alterElemAttribute(self,xpath:str,attribute:str,newValue:str):
+        self.driver.execute_script(f'document.evaluate(`{xpath}`, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.setAttribute("{attribute}","{newValue}")')
 
+
+    def realClearField(self,element : uc.WebElement):
+            if element.get_property("value") != "":
+                self.pause(shortened=True)
+                element.send_keys(Keys.CONTROL, "a")
+                self.pause(shortened=True)
+                element.send_keys(Keys.BACK_SPACE)
+                self.pause()
 
     
     def realSendKeys(self,element : uc.WebElement,string:str,clickElem = True, ms :int =145,randomOffSet : bool | int =20):
