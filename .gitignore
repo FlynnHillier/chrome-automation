@@ -1,2 +1,5 @@
 env
 __pycache__
+proxies.txt
+emails.txt
+proxies
