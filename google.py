@@ -50,13 +50,36 @@ class Google:
 
         driver.get("https://accounts.google.com/signup")
 
+        input()
+
+        XPATH_CREATEACCOUNT_ANCHOR = '//span[contains(text(),"Create your Google Account")]'
+
+        #select english language
+        XPATH_LANGSELECTOR = "//div[@id='lang-chooser']"
+        XPATH_ACTIVELANG = f"{XPATH_LANGSELECTOR}//div[@role='option'][@aria-selected='true']"
+        XPATH_DESIREDLANGOPTION = f"{XPATH_LANGSELECTOR}//div[@role='option'][@data-value='en-GB']"
+
+        if not driver.find_element(By.XPATH,XPATH_DESIREDLANGOPTION).get_attribute("aria-selected") == "true":
+            print("changing locale to en-GB")
+            self.z.pause()
+            driver.find_element(By.XPATH,XPATH_ACTIVELANG).click()
+            self.z.pause()
+            driver.find_element(By.XPATH,XPATH_DESIREDLANGOPTION).click()
+            
+            WebDriverWait(driver,5).until(
+                EC.presence_of_element_located((By.XPATH,XPATH_CREATEACCOUNT_ANCHOR))
+            )
+
+
+
+
+
+        #user detail input
         inp_fname = driver.find_element(By.XPATH,"//input[@id='firstName']") #[@autocomplete='username']
         inp_lname = driver.find_element(By.XPATH,"//input[@id='lastName']")
         inp_username = driver.find_element(By.XPATH,"//input[@id='username']")
         inp_passwords = driver.find_elements(By.XPATH,"//input[@autocomplete='new-password']")
         next_button = driver.find_element(By.XPATH,'''//*[contains(text(), "Next")]''') #input[@id='view_container']
-
-        XPATH_CREATEACCOUNT_ANCHOR = '//span[contains(text(),"Create your Google Account")]'
 
         #generate email from first and last name if one is not provided in arguments
         email = email if email != None else self.__generateEmailAddress(fname,lname) 
