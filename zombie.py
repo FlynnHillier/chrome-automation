@@ -9,6 +9,10 @@ import random
 from selenium.webdriver.remote.webdriver import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+
 
 class Zombie:
     def __init__(self,proxy:Proxy | None = None,defaultImplTimeout = 6,pause_cnfg : dict = {}):
@@ -20,6 +24,7 @@ class Zombie:
             "shortM":0.35,
         }
         locale = "en-GB"
+        self.implTimeout = defaultImplTimeout
         
         self.pause_cnfg.update(pause_cnfg)
         
@@ -49,38 +54,54 @@ class Zombie:
             return False
 
     def queryPageUpdate(self,anchorXpath:str,timeOut: int =10,interval:int =0.1) -> bool:
-        Tstart = time.time()
-        while time.time() < Tstart + timeOut:
-            try:
-                print("query!")
-                self.driver.find_element(By.XPATH,anchorXpath)
-                time.sleep(interval)
-            except NoSuchElementException:
-                return True
-        
-        return False
+        try:
+            self.__disableImplicitWait()
+            Tstart = time.time()
+            while time.time() < Tstart + timeOut:
+                try:
+                    self.driver.find_element(By.XPATH,anchorXpath)
+                    time.sleep(interval)
+                except NoSuchElementException:
+                    return True
+            
+            return False
+        finally:
+            self.__enableImplicitWait()
 
 
     def querySubmitResult(self,successXpath:str,failXpath:str,timeout: int = 10, interval: int = 0.1) ->bool:
         Tstart = time.time()
-        while time.time() < Tstart + timeout:
-            try: #check for success Xpath
-                self.driver.find_element(By.XPATH,successXpath)
-                return True
-            except NoSuchElementException:
-                pass
+        try:
+            self.__disableImplicitWait()
+            while time.time() < Tstart + timeout:
+                try: #check for success Xpath
+                    self.driver.find_element(By.XPATH,successXpath)
+                    return True
+                except NoSuchElementException:
+                    pass
 
-            try: #check for fail xpath
-                self.driver.find_element(By.XPATH,failXpath)
-                return False
-            except NoSuchElementException:
-                pass
+                try: #check for fail xpath
+                    self.driver.find_element(By.XPATH,failXpath)
+                    return False
+                except NoSuchElementException:
+                    pass
+                
+                time.sleep(interval)
+        finally:
+            self.__enableImplicitWait()
             
-            time.sleep(interval)
-
-
-        
         raise NoSuchElementException("could not find either element proposed, after timeout.")
+
+    
+    def queryElementExists(self,xpath:str):
+        try:
+            self.__disableImplicitWait()
+            self.driver.find_element(By.XPATH,xpath)
+            return True
+        except NoSuchElementException:
+            return False
+        finally:
+            self.__enableImplicitWait()
 
         
     
@@ -126,6 +147,21 @@ class Zombie:
             
         time.sleep(random.randint(min,max) / 1000 * shortened if not shortened == False else 1)
 
+    def acceptAlertIfPresent(self,timeout=3):
+        try:
+            primary_window = self.driver.window_handles[0]
+            WebDriverWait(self.driver, timeout).until(
+                EC.alert_is_present(),
+                                        'Timed out waiting for PA creation ' +
+                                        'confirmation popup to appear.')
+
+            alert = self.driver.switch_to.alert
+            alert.accept()
+            return True
+        except TimeoutException:
+            return False
+        finally:
+            self.driver.switch_to.window(primary_window)
 
 
     def __generateProxyExtensionFolder(self,folderPath="proxyExtension") -> str:
@@ -138,6 +174,17 @@ class Zombie:
             f.write(proxyExtensionStrings["script"] % (self.proxy.host, self.proxy.port, self.proxy.user, self.proxy.password))
 
         return folderPath
+
+    def __disableImplicitWait(self,setImplicitWaitTo:int=0):
+        self.driver.implicitly_wait(setImplicitWaitTo)
+
+    def __enableImplicitWait(self):
+        self.driver.implicitly_wait(self.implTimeout)
+    
+    def kill(self):
+        self.driver.quit()
+
+
 
     
 
