@@ -37,6 +37,11 @@ class Google:
         ELEM_next = self.z.driver.find_element(By.XPATH,XPATH_next)
         ELEM_next.click()
         self.loggedIn = True
+        print("logged in.")
+        print("sleeping for five seconds.")
+        time.sleep(5)
+        print("slept for five seconds.")
+
 
 
 
@@ -72,6 +77,8 @@ class Google:
             inp_username.send_keys(Keys.BACK_SPACE)
         self.z.realSendKeys(inp_username,email)
         
+        self.z.pause()
+
         #enter passwords
         for elem in inp_passwords:
             self.z.pause()
@@ -86,6 +93,7 @@ class Google:
         XPATH_isVerifyPhoneNumber = '''//*[contains(text(), "Verifying your phone number")]'''
 
         if self.z.getConditionalElement(XPATH_isVerifyPhoneNumber) != False:
+            print("phone number verification required.")
             #verify a phone number
 
             #enter phone number
@@ -139,12 +147,12 @@ class Google:
                 submitResult = self.z.querySubmitResult(XPATH_VERIFCODEINP,XPATH_ONINVALIDPHONE_SVGICON) #check for success or failure after submit based on presence of either xpath
 
                 if submitResult == True:
+                    print("phone number accepted.")
                     phoneNumberAccepted = True
                     break
 
                 errorMessage = driver.find_element(By.XPATH,XPATH_ERRORMESSAGEDIV).get_attribute("innerText")
                 print(f"phone number denied. Reason:\n'{errorMessage}'")
-                input()
                 self.z.alterElemAttribute(XPATH_ONINVALIDPHONE_SVGICON,"focusable","true") #change focusable attribute (focusable because it is a condition of the xpath used) of invalid phone number icon, so conditional element will not trigger unless element is refreshed to have default value (if another valid phone number is inputted)
                 
                 valid = False #check phone number is in valid format before attempting to resubmit it to google
@@ -165,7 +173,7 @@ class Google:
 
                 validFormat = False #while a correctly formatted verification code has not been inputted
                 while not validFormat:
-                    verifCode = input("enter code:\n>>")
+                    verifCode = input("enter verification code:\n>>")
                     if len(verifCode) == 6 and verifCode.isnumeric():
                         validFormat = True
                     else:
@@ -179,11 +187,9 @@ class Google:
 
                 submitResult = self.z.querySubmitResult(XPATH_DOBDAY,XPATH_ONINVALIDPHONE_SVGICON)
 
-                ### ***FIX THIS*** ###
-                # HARD CODED SLEEP TO AWAIT FOR PAGE UPDATE
-                
                 if submitResult == True:
                     veriCodeAccepted = True
+                    print("verification success.")
                     break
 
                 print("verification failed.")
@@ -255,12 +261,14 @@ class Google:
             self.z.pause(4000,5000)
             AGREEBUTTON.click()
             
-
+        
+        with open("emails.txt","a") as f:
+            f.write(f"\n{email}@gmail.com")
             
         print("sign up complete.")
-
-        with open("emails.txt","w+") as f:
-            f.write(f"{email}\n")
+        print("sleeping for 8 seconds.")
+        time.sleep(8)
+        print("slept")
 
 
 
@@ -272,9 +280,10 @@ class Google:
 
     def forwardToEmail(self,forwardTo:str) -> bool:
         driver = self.z.driver
-        self.z.pause()
         driver.get("https://mail.google.com/mail/u/0/?tab=rm&ogbl#settings/fwdandpop")
+        time.sleep(1)
 
+        popupWasPresent = self.z.acceptAlertIfPresent()
 
         XPATH_ForwardToSelection = f'''//span[contains(text(), "Forward a copy of incoming mail to")]//option[contains(text(), "{forwardTo}")][not(contains(text(),"Remove"))]'''
         XPATH_ForwardRadioButton = '''//*[contains(text(), "Forward a copy of incoming mail to")]/ancestor::tbody[1]//input[@type="radio"][@value="1"]'''
@@ -283,6 +292,43 @@ class Google:
         XPATH_onSubmitIsForwarding = f'''//*[contains(text(), "You are forwarding your email to {forwardTo}.")]'''
 
         XPATH_onVerifyCodeSubmitIsInvalid = '''//div[contains(text(), "Incorrect confirmation code.")]'''
+
+        
+        #handle first time gmail pop-up
+        XPATH_POPUPCONTAINER = "//div[@role='dialog']"
+        
+        XPATH_OPTION1SELECT = '//div[contains(text(),"Continue with smart features")]/parent::*//span'
+        XPATH_OPTION2SELECT = '//div[contains(text(),"Personalise other Google products with my Gmail, Chat and Meet data")]/parent::*//span'
+        XPATH_POPUPNEXT = "//button[@name='data_consent_dialog_next']"
+        XPATH_POPUPDONE = "//button[@name='data_consent_dialog_done']"
+
+
+        XPATH_LOADSCREEN = "//div[@id='loading'][not(@style='display: none;')]"
+        #await loading screen
+        self.z.queryPageUpdate(XPATH_LOADSCREEN,20)
+
+
+        isPopup = self.z.queryElementExists(XPATH_POPUPCONTAINER)
+
+        if isPopup == True: #popup is present.
+            print("handling first time load popup.")
+            OPTION1_SELECT = driver.find_element(By.XPATH,XPATH_OPTION1SELECT)
+            NEXT_BUTTON = driver.find_element(By.XPATH,XPATH_POPUPNEXT)
+
+            OPTION1_SELECT.click()
+            self.z.pause(shortened=True)
+            NEXT_BUTTON.click()
+            self.z.pause(shortened=True)
+
+            OPTION2_SELECT = driver.find_element(By.XPATH,XPATH_OPTION2SELECT)
+            DONE_BUTTON = driver.find_element(By.XPATH,XPATH_POPUPDONE)
+
+
+            OPTION2_SELECT.click()
+            self.z.pause(shortened=True)
+            DONE_BUTTON.click()
+
+            return self.forwardToEmail(forwardTo)
 
         #check if have already validated forwarding email
         forwardToSelection = self.z.getConditionalElement(XPATH_ForwardToSelection)
@@ -321,6 +367,8 @@ class Google:
                 ELEM_ForwardOk.click()
 
                 VerifyField = driver.find_element(By.XPATH,XPATH_VERIFYFIELD)
+            else:
+                print("verification request already pending!")
 
             #handle verification code
             verified = False
@@ -356,11 +404,17 @@ class Google:
 
         if not ELEM_saveChanges.is_enabled():
             print("already forwarding!")
-            return True
+            isForwarding = True
         else:
+            print("saving changes.")
             ELEM_saveChanges.click()
             isForwarding = self.z.getConditionalElement(XPATH_onSubmitIsForwarding)
-            return True if isForwarding != False else False
+        
+        if(isForwarding):
+            print(f"now forwarding to {forwardTo} .")
+        else:
+            print("something went wrong.")
+        return True if isForwarding != False else False
 
     def __generateEmailAddress(self,fname : str,lname : str):
         first = fname[0:: 1 if random.randint(0,1) == 1 else -1]
