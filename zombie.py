@@ -19,6 +19,7 @@ class Zombie:
             "max":1500,
             "shortM":0.35,
         }
+        locale = "en-GB"
         
         self.pause_cnfg.update(pause_cnfg)
         
@@ -29,6 +30,7 @@ class Zombie:
             self.__generateProxyExtensionFolder(extensionFolderPath)
             options.add_argument(f"--load-extension={','.join([extensionFolderPath])}")
 
+        options.add_argument(f"--lang={locale}")
         self.driver = uc.Chrome(
             options=options
         )
@@ -45,6 +47,43 @@ class Zombie:
             return elem
         except NoSuchElementException:
             return False
+
+    def queryPageUpdate(self,anchorXpath:str,timeOut: int =10,interval:int =0.1) -> bool:
+        Tstart = time.time()
+        while time.time() < Tstart + timeOut:
+            try:
+                print("query!")
+                self.driver.find_element(By.XPATH,anchorXpath)
+                time.sleep(interval)
+            except NoSuchElementException:
+                return True
+        
+        return False
+
+
+    def querySubmitResult(self,successXpath:str,failXpath:str,timeout: int = 10, interval: int = 0.1) ->bool:
+        Tstart = time.time()
+        while time.time() < Tstart + timeout:
+            try: #check for success Xpath
+                self.driver.find_element(By.XPATH,successXpath)
+                return True
+            except NoSuchElementException:
+                pass
+
+            try: #check for fail xpath
+                self.driver.find_element(By.XPATH,failXpath)
+                return False
+            except NoSuchElementException:
+                pass
+            
+            time.sleep(interval)
+
+
+        
+        raise NoSuchElementException("could not find either element proposed, after timeout.")
+
+        
+    
 
     def alterElemAttribute(self,xpath:str,attribute:str,newValue:str):
         self.driver.execute_script(f'document.evaluate(`{xpath}`, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.setAttribute("{attribute}","{newValue}")')

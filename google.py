@@ -51,6 +51,8 @@ class Google:
         inp_passwords = driver.find_elements(By.XPATH,"//input[@autocomplete='new-password']")
         next_button = driver.find_element(By.XPATH,'''//*[contains(text(), "Next")]''') #input[@id='view_container']
 
+        XPATH_CREATEACCOUNT_ANCHOR = '//span[contains(text(),"Create your Google Account")]'
+
         #generate email from first and last name if one is not provided in arguments
         email = email if email != None else self.__generateEmailAddress(fname,lname) 
 
@@ -133,43 +135,25 @@ class Google:
                 self.z.realSendKeys(NUMBERINPUT,phoneNumber)
                 self.z.pause(shortened=True)
                 NUMBERINPUT.send_keys("\n")
+                
+                submitResult = self.z.querySubmitResult(XPATH_VERIFCODEINP,XPATH_ONINVALIDPHONE_SVGICON) #check for success or failure after submit based on presence of either xpath
 
-                # WebDriverWait(driver,10).until( #wait until the page has updated after button click. (either element from next stage is present or failure trigger element is)
-                #     EC.any_of(
-                #             EC.presence_of_element_located((By.XPATH,XPATH_ONINVALIDPHONE_SVGICON)),
-                #             EC.presence_of_element_located((By.XPATH,XPATH_VERIFCODEINP))
-                #         )
-                # )
-
-                ### ***FIX THIS*** ###
-                # HARD CODED SLEEP TO AWAIT FOR PAGE UPDATE
-
-                print("tiem sleep")
-                time.sleep(10)
-                print("time")
-
-
-                print("sleeping")
-                self.z.pause(7000,8000) 
-                print("slept")
-
-                ERRORICON = self.z.getConditionalElement(XPATH_ONINVALIDPHONE_SVGICON)
-
-                if ERRORICON != False:
-                    errorMessage = driver.find_element(By.XPATH,XPATH_ERRORMESSAGEDIV).get_attribute("innerText")
-                    self.z.alterElemAttribute(XPATH_ONINVALIDPHONE_SVGICON,"focusable","true") #change focusable attribute (focusable because it is a condition of the xpath used) of invalid phone number icon, so conditional element will not trigger unless element is refreshed to have default value (if another valid phone number is inputted)
-                    print(f"phone number denied. Reason:\n'{errorMessage}'")
-                    
-                    valid = False #check phone number is in valid format before attempting to type it to google
-                    while not valid:
-                        phoneNumber = input("enter phone number:\n>>")
-                        if len(phoneNumber) == 11 and phoneNumber.isnumeric():
-                            valid = True
-                        else:
-                            print("invalid number format.")
-
-                else:
+                if submitResult == True:
                     phoneNumberAccepted = True
+                    break
+
+                errorMessage = driver.find_element(By.XPATH,XPATH_ERRORMESSAGEDIV).get_attribute("innerText")
+                print(f"phone number denied. Reason:\n'{errorMessage}'")
+                input()
+                self.z.alterElemAttribute(XPATH_ONINVALIDPHONE_SVGICON,"focusable","true") #change focusable attribute (focusable because it is a condition of the xpath used) of invalid phone number icon, so conditional element will not trigger unless element is refreshed to have default value (if another valid phone number is inputted)
+                
+                valid = False #check phone number is in valid format before attempting to resubmit it to google
+                while not valid:
+                    phoneNumber = input("enter phone number:\n>>")
+                    if len(phoneNumber) == 11 and phoneNumber.isnumeric():
+                        valid = True
+                    else:
+                        print("invalid number format.")
 
 
             #enter verification code
@@ -177,7 +161,7 @@ class Google:
 
 
             veriCodeAccepted = False
-            while not veriCodeAccepted: #while verification has not been accepted.
+            while veriCodeAccepted == False: #while verification has not been accepted.
 
                 validFormat = False #while a correctly formatted verification code has not been inputted
                 while not validFormat:
@@ -193,29 +177,20 @@ class Google:
                 self.z.pause()
                 VERIFCODEINP.send_keys("\n")
 
-                # WebDriverWait(driver,10).until( #wait until the page has updated after button click. (either element from next stage is present or failure trigger element is)
-                #     EC.any_of(
-                #             EC.presence_of_element_located((By.XPATH,XPATH_ONINVALIDPHONE_SVGICON)),
-                #             EC.presence_of_element_located((By.XPATH,XPATH_DOBDAY))
-                #         )
-                # )
+                submitResult = self.z.querySubmitResult(XPATH_DOBDAY,XPATH_ONINVALIDPHONE_SVGICON)
 
                 ### ***FIX THIS*** ###
                 # HARD CODED SLEEP TO AWAIT FOR PAGE UPDATE
                 
-                print("sleeping.")
-                time.sleep(10)
-                print("slept.")
-
-                INVALID = self.z.getConditionalElement(XPATH_ONINVALIDPHONE_SVGICON)
-
-                if INVALID != False: #verification failed
-                    errorMessage = driver.find_element(By.XPATH,XPATH_ERRORMESSAGEDIV).get_attribute("innerText")
-                    self.z.alterElemAttribute(XPATH_ONINVALIDPHONE_SVGICON,"focusable","true")
-                    print(f"verification code not accepted. Reason: '{errorMessage}'")
-                    self.z.realClearField(VERIFCODEINP)
-                else:
+                if submitResult == True:
                     veriCodeAccepted = True
+                    break
+
+                print("verification failed.")
+                errorMessage = driver.find_element(By.XPATH,XPATH_ERRORMESSAGEDIV).get_attribute("innerText")
+                self.z.alterElemAttribute(XPATH_ONINVALIDPHONE_SVGICON,"focusable","true")
+                print(f"verification code not accepted. Reason: '{errorMessage}'")
+                self.z.realClearField(VERIFCODEINP)
 
             #welcome to google screen (DOB gender)
             RECOVERYPHONE = driver.find_element(By.XPATH,XPATH_RECOVERYPHONE)
