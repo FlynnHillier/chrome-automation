@@ -291,11 +291,11 @@ class Google:
         
         with open("emails.txt","a") as f:
             f.write(f"\n{email}@gmail.com")
-            
-        print("sign up complete.")
-        print("sleeping for 8 seconds.")
+        
         time.sleep(8)
-        print("slept")
+        print("sign up complete.")
+
+        return email
 
 
 

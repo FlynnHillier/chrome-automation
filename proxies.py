@@ -7,8 +7,8 @@ class Proxy:
         self.user = user
         self.password = password
 
-
-
+    def string(self):
+        return f"{self.host}:{self.port}:{self.user}:{self.password}"
 
 
 def loadProxies(filepath:str = path.join(path.dirname(__file__),"proxies.txt")) -> list:

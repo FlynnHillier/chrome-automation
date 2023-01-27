@@ -27,6 +27,9 @@ class TaskMaster:
         if self.__isBlankProfileActive():
             self.rotateActiveBrowserProfile()
 
+    def incrementUseCount(self):
+        self.active["useCount"] += 1
+        self.__updateActiveProfileInFile()
     
 
 
@@ -35,6 +38,11 @@ class TaskMaster:
         self.__loadPhones()
         self.__loadActiveBrowserProfile()
 
+    def getActiveProxy(self) -> Proxy:
+        return self.active["proxy"]
+
+    def getActivePhone(self) -> str:
+        return self.active["phone"]
 
 
     def rotateActiveBrowserProfile(self):
@@ -57,7 +65,7 @@ class TaskMaster:
         newProxy = self.getAvailableProxy()
 
         self.__deletePhoneFromFile(newPhone)
-        self.__deleteProxyFromFile(newProxy.string())
+        self.__deleteProxyFromFile(newProxy)
 
         browserProfileData["active"] = {
             "phone":newPhone,
@@ -65,7 +73,13 @@ class TaskMaster:
             "useCount":0
         }
 
-        self.__updateBaseProfiles(browserProfileData)
+        self.__updateProfilesJson(browserProfileData)
+
+        self.active = {
+            "phone":newPhone,
+            "proxy":newProxy,
+            "useCount":0
+        }
 
 
     def getAvailablePhone(self):
@@ -93,12 +107,12 @@ class TaskMaster:
             f.writelines(out)
 
     
-    def __deleteProxyFromFile(self,proxyString:str ):
+    def __deleteProxyFromFile(self,proxy:Proxy ):
         with open(self.paths["proxies"],"r") as f:
             proxies = f.readlines()
         out = []
         for index,Aproxy in enumerate(proxies):
-            if not proxyString == Aproxy.rstrip("\n"):
+            if not proxy.string() == Aproxy.rstrip("\n"):
                 out.append(Aproxy)
         
         with open(self.paths["proxies"],"w+") as f:
@@ -110,6 +124,8 @@ class TaskMaster:
         with open(self.paths["browserProfiles"],"r") as f:
             data = json.load(f)
         self.active = data["active"]
+        if not self.active["proxy"] == "":
+            self.active["proxy"] = self.__getProxyDetails(self.active["proxy"])
 
     def __createBaseProfilesJson(self):
         base = {
@@ -121,9 +137,18 @@ class TaskMaster:
             "utilised":[]
         }
 
-        self.__updateBaseProfiles(base)
+        self.__updateProfilesJson(base)
 
-    def __updateBaseProfiles(self,jsonData:object):
+    def __updateActiveProfileInFile(self) -> None:
+        with open(self.paths["browserProfiles"],"r") as f:
+            existingData = json.loads(f.read())
+        
+        existingData["active"] = self.active
+
+        with open(self.paths["browserProfiles"],"w+") as f:
+            f.write(json.dumps(existingData,indent="\t"))
+
+    def __updateProfilesJson(self,jsonData:object):
         with open(self.paths["browserProfiles"],"w+") as f:
             f.write(json.dumps(jsonData,indent="\t"))
 
