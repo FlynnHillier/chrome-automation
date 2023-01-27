@@ -27,8 +27,6 @@ class Zombie:
         self.implTimeout = defaultImplTimeout
         
         self.pause_cnfg.update(pause_cnfg)
-        
-        print(self.pause_cnfg)
 
         if not proxy == None:
             extensionFolderPath = os.path.join(os.path.dirname(__file__),"proxies",str(uuid.uuid4()))

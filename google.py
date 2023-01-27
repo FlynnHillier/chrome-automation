@@ -5,8 +5,8 @@ import string
 from selenium.webdriver import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 import selenium.webdriver.support.expected_conditions as EC
-
 import time
+import names
 
 
 class Google:
@@ -45,12 +45,10 @@ class Google:
 
 
 
-    def signup(self,fname:str,lname:str,password:str,phoneNumber : str,email : str | None = None):
+    def signup(self,phoneNumber : str,password:str,fname:str | None = None,lname:str | None = None,email : str | None = None):
         driver = self.z.driver
 
         driver.get("https://accounts.google.com/signup")
-
-        input()
 
         XPATH_CREATEACCOUNT_ANCHOR = '//span[contains(text(),"Create your Google Account")]'
 
@@ -80,6 +78,10 @@ class Google:
         inp_username = driver.find_element(By.XPATH,"//input[@id='username']")
         inp_passwords = driver.find_elements(By.XPATH,"//input[@autocomplete='new-password']")
         next_button = driver.find_element(By.XPATH,'''//*[contains(text(), "Next")]''') #input[@id='view_container']
+
+        #generate name if not provided in arguments
+        fname = fname if fname != None else names.get_first_name(gender="male")
+        lname = lname if lname != None else names.get_last_name()
 
         #generate email from first and last name if one is not provided in arguments
         email = email if email != None else self.__generateEmailAddress(fname,lname) 
@@ -130,6 +132,7 @@ class Google:
 
             #XPATH verify code
             XPATH_VERIFCODEINP = "//input[@type='tel'][@name='code']" 
+            XPATH_RESENDVERIFCODE = "//"
 
             #XPATH personal details
             v_DOBDAY = "12"
@@ -177,7 +180,8 @@ class Google:
                 errorMessage = driver.find_element(By.XPATH,XPATH_ERRORMESSAGEDIV).get_attribute("innerText")
                 print(f"phone number denied. Reason:\n'{errorMessage}'")
                 self.z.alterElemAttribute(XPATH_ONINVALIDPHONE_SVGICON,"focusable","true") #change focusable attribute (focusable because it is a condition of the xpath used) of invalid phone number icon, so conditional element will not trigger unless element is refreshed to have default value (if another valid phone number is inputted)
-                
+
+
                 valid = False #check phone number is in valid format before attempting to resubmit it to google
                 while not valid:
                     phoneNumber = input("enter phone number:\n>>")
@@ -193,7 +197,7 @@ class Google:
 
             veriCodeAccepted = False
             while veriCodeAccepted == False: #while verification has not been accepted.
-
+                
                 validFormat = False #while a correctly formatted verification code has not been inputted
                 while not validFormat:
                     verifCode = input("enter verification code:\n>>")
