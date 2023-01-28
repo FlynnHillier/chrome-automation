@@ -93,11 +93,11 @@ class Google:
         self.z.pause(shortened=True)
         inp_username.click()
 
-        acceptedEmail = False
-        while not acceptedEmail:
+        emailIsDenied = False
+        emailIsVerified = False
+        while not emailIsVerified:
             #generate email from first and last name if one is not provided in arguments
-            email = email if email != None else self.__generateEmailAddress(fname,lname) 
-
+            email = email if email != None and not emailIsDenied else self.__generateEmailAddress(fname,lname) 
             #clear email field if suggested is displayed
             if inp_username.get_property("value") != "":
                 self.z.pause(shortened=True)
@@ -112,8 +112,9 @@ class Google:
             inp_fname.click()
 
             if self.z.timeoutQueryElementExists(XPATH_ONINVALIDPHONE_SVGICON) == False:
-                acceptedEmail = True
+                emailIsVerified = True
             else:
+                emailIsDenied = True
                 print("email already in use, regenerating.")
             self.z.pause()
 
@@ -224,6 +225,8 @@ class Google:
                 self.z.realSendKeys(VERIFCODEINP,verifCode)
                 self.z.pause()
                 VERIFCODEINP.send_keys("\n")
+
+                time.sleep(4)
 
                 submitResult = self.z.querySubmitResult(XPATH_DOBDAY,XPATH_ONINVALIDPHONE_SVGICON)
 
@@ -414,7 +417,7 @@ class Google:
             verified = False
             while verified == False:
                 verifyCode = input("verification code:\n>> ")
-                if len(verifyCode) != 9 or not verifyCode.isnumeric():
+                if (len(verifyCode) != 9 and len(verifyCode) != 8) or not verifyCode.isnumeric():
                     print("invalid verification code format.")
                     continue
                 
