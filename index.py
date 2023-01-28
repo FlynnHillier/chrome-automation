@@ -15,6 +15,7 @@ while True:
         google = Google(zombie)
         email = google.signup(t.getActivePhone(),signUpPassword)
         google.forwardToEmail(forwardToEmail)
+        t.incrementUseCount()
     except KeyboardInterrupt:
         zombie.kill()
         selection = ""

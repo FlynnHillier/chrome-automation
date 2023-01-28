@@ -101,6 +101,15 @@ class Zombie:
         finally:
             self.__enableImplicitWait()
 
+    
+    def timeoutQueryElementExists(self,xpath:str,timeout:int = 2):
+        try:
+            WebDriverWait(self.driver,timeout).until(
+                EC.presence_of_element_located((By.XPATH,xpath))
+            )
+            return True
+        except TimeoutException:
+            return False
         
     
 

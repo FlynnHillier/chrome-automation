@@ -50,6 +50,8 @@ class Google:
 
         driver.get("https://accounts.google.com/signup")
 
+        XPATH_ONINVALIDPHONE_SVGICON = "//*[local-name() = 'svg'][@fill='currentColor'][@focusable='false']"
+
         XPATH_CREATEACCOUNT_ANCHOR = '//span[contains(text(),"Create your Google Account")]'
 
         #select english language
@@ -83,9 +85,6 @@ class Google:
         fname = fname if fname != None else names.get_first_name(gender="male")
         lname = lname if lname != None else names.get_last_name()
 
-        #generate email from first and last name if one is not provided in arguments
-        email = email if email != None else self.__generateEmailAddress(fname,lname) 
-
         #enter details
         self.z.pause()
         self.z.realSendKeys(inp_fname,fname)
@@ -94,15 +93,29 @@ class Google:
         self.z.pause(shortened=True)
         inp_username.click()
 
-        #clear email field if suggested is displayed
-        if inp_username.get_property("value") != "":
-            self.z.pause(shortened=True)
-            inp_username.send_keys(Keys.CONTROL, "a")
-            self.z.pause(shortened=True)
-            inp_username.send_keys(Keys.BACK_SPACE)
-        self.z.realSendKeys(inp_username,email)
+        acceptedEmail = False
+        while not acceptedEmail:
+            #generate email from first and last name if one is not provided in arguments
+            email = email if email != None else self.__generateEmailAddress(fname,lname) 
+
+            #clear email field if suggested is displayed
+            if inp_username.get_property("value") != "":
+                self.z.pause(shortened=True)
+                inp_username.send_keys(Keys.CONTROL, "a")
+                self.z.pause(shortened=True)
+                inp_username.send_keys(Keys.BACK_SPACE)
+            
         
-        self.z.pause()
+            self.z.realSendKeys(inp_username,email)    
+            
+            self.z.pause()
+            inp_fname.click()
+
+            if self.z.timeoutQueryElementExists(XPATH_ONINVALIDPHONE_SVGICON) == False:
+                acceptedEmail = True
+            else:
+                print("email already in use, regenerating.")
+            self.z.pause()
 
         #enter passwords
         for elem in inp_passwords:
