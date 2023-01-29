@@ -324,7 +324,9 @@ class Google:
     def forwardToEmail(self,forwardTo:str) -> bool:
         driver = self.z.driver
         driver.get("https://mail.google.com/mail/u/0/?tab=rm&ogbl#settings/fwdandpop")
-        time.sleep(1)
+        print("sleeping 6 seconds")
+        time.sleep(6)
+        print("slept.")
 
         popupWasPresent = self.z.acceptAlertIfPresent()
 

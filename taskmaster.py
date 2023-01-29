@@ -46,6 +46,7 @@ class TaskMaster:
 
 
     def rotateActiveBrowserProfile(self):
+        self.refresh()
         if len(self.phones) == 0:
             raise BaseException("no remaining phone numbers.")
         
